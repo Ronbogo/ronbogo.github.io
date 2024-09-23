@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="前言机缘巧合下接触到了XLA一些相关工作，发现网上资料甚少，正好有个写文档的活就顺便在知乎梳理一下。笔者水平极其有限，刚接触 DL Compiler 不久，如笔记中有疏漏请各位大佬不吝赐教PS：由于OpenXLA项目本身迭代较快，笔记中的描述是基于以下commit的repoOpenXLA：8e24878PyTorch&#x2F;XLA:  786484d XLA、torch_xla的一些基本知识O">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Hexo">
+<meta property="og:url" content="http://example.com/2024/09/24/torch-xla-0/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="前言机缘巧合下接触到了XLA一些相关工作，发现网上资料甚少，正好有个写文档的活就顺便在知乎梳理一下。笔者水平极其有限，刚接触 DL Compiler 不久，如笔记中有疏漏请各位大佬不吝赐教PS：由于OpenXLA项目本身迭代较快，笔记中的描述是基于以下commit的repoOpenXLA：8e24878PyTorch&#x2F;XLA:  786484d XLA、torch_xla的一些基本知识O">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://github.com/Ronbogo/picx-images-hosting/raw/master/v2-e5780e7b0d8126d30b4613a6a9bc8f53_1440w.5tqzoiy77v.webp">
+<meta property="article:published_time" content="2024-09-23T16:33:42.873Z">
+<meta property="article:modified_time" content="2024-09-23T16:36:44.786Z">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/Ronbogo/picx-images-hosting/raw/master/v2-e5780e7b0d8126d30b4613a6a9bc8f53_1440w.5tqzoiy77v.webp">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>Hexo</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="Menu"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="Menu"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="Top" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="http://github.com/probberechts">Projects</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        
+        <li><a class="icon" aria-label="Next post" href="/2024/09/24/torch-xla-1/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="Back to top" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="Share post" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://example.com/2024/09/24/torch-xla-0/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://example.com/2024/09/24/torch-xla-0/&text="><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://example.com/2024/09/24/torch-xla-0/&title="><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://example.com/2024/09/24/torch-xla-0/&is_video=false&description="><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=&body=Check out this article: http://example.com/2024/09/24/torch-xla-0/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://example.com/2024/09/24/torch-xla-0/&title="><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://example.com/2024/09/24/torch-xla-0/&title="><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://example.com/2024/09/24/torch-xla-0/&title="><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://example.com/2024/09/24/torch-xla-0/&title="><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://example.com/2024/09/24/torch-xla-0/&name=&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://example.com/2024/09/24/torch-xla-0/&t="><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#XLA%E3%80%81torch-xla%E7%9A%84%E4%B8%80%E4%BA%9B%E5%9F%BA%E6%9C%AC%E7%9F%A5%E8%AF%86"><span class="toc-number">2.</span> <span class="toc-text">XLA、torch_xla的一些基本知识</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#OpenXLA-XLA"><span class="toc-number">2.1.</span> <span class="toc-text">OpenXLA&#x2F;XLA</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Pytorch-XLA"><span class="toc-number">2.2.</span> <span class="toc-text">Pytorch&#x2F;XLA</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#JIT%E7%BC%96%E8%AF%91%E9%93%BE%E8%B7%AF"><span class="toc-number">3.</span> <span class="toc-text">JIT编译链路</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%80%E4%BA%9B%E6%9C%89%E7%94%A8%E7%9A%84%E5%85%A5%E9%97%A8%E8%B5%84%E6%96%99"><span class="toc-number">4.</span> <span class="toc-text">一些有用的入门资料</span></a></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">John Doe</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2024-09-23T16:33:42.873Z" class="dt-published" itemprop="datePublished">2024-09-24</time>
+        
+      
+    </div>
+
+
+      
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>机缘巧合下接触到了XLA一些相关工作，发现网上资料甚少，正好有个写文档的活就顺便在知乎梳理一下。笔者水平极其有限，刚接触 DL Compiler 不久，如笔记中有疏漏请各位大佬不吝赐教<br>PS：由于OpenXLA项目本身迭代较快，笔记中的描述是基于以下commit的repo<br>OpenXLA：8e24878<br>PyTorch&#x2F;XLA:  786484d</p>
+<h1 id="XLA、torch-xla的一些基本知识"><a href="#XLA、torch-xla的一些基本知识" class="headerlink" title="XLA、torch_xla的一些基本知识"></a>XLA、torch_xla的一些基本知识</h1><h2 id="OpenXLA-XLA"><a href="#OpenXLA-XLA" class="headerlink" title="OpenXLA&#x2F;XLA"></a>OpenXLA&#x2F;XLA</h2><p>XLA是一个Google主导开发的深度学习编译器，现在其开源版本由OpenXLA社区维护。XLA最早并不是一个独立项目，而是作为TF1的编译后端出现的。大家都知道TF1一个广为算法工程师诟病的点就是它基于静态图，导致了缺乏可观测性和易用性，但与此同时，可以通过编译优化的方式获得了性能收益。时至今日XLA仍然是采用静态图编译，对于对动态性的支持非常有限度（仅支持bounded dynamic shape），这便引入了由于动态性重编译的overhead，如LLM，多模态模型中存在一些有dynamic shape的算子会触发重编译，需要重新进行计算图的建立和编译，带来了不小的性能开销，这也是社区待解决的问题之一（或者社区可能选择不支持？）<br>然后再来看IR，XLA现在可以接受两种输入IR，分别是HLO和StableHLO，其中StableHLO是官方推荐的接入XLA的IR，它是一种MLIR方言，但由于XLA中心IR是HLO，StableHLO在编译流程中仍然要lowering到HLO，因此对于熟悉HLO的TF和Torch团队他们接入XLA都是直接使用HLO。在Codegen部分更早一些的架构中是两条路，对某些算子是走HLO-&gt;Triton IR-&gt;LLVM IR，HLO-&gt;MLIR-&gt;LLVM IR，，但现在社区在渐渐取缔MLIR，直接使用HLO-&gt;LLVM IR进行Codegen</p>
+<h2 id="Pytorch-XLA"><a href="#Pytorch-XLA" class="headerlink" title="Pytorch&#x2F;XLA"></a>Pytorch&#x2F;XLA</h2><p>torch xla虽然项目名也叫XLA，但实际上这个项目本身的内容可以将其看作XLA的一个前端。上面我们提到要接入到XLA进行编译需要转化为StableHLO或HLO，torch xla所做事情主要是将Pytorch中通过LazyTensor机制trace到的Aten计算图转化成HLO表示的计算图，并调用XLA进行编译和执行。<br>写一个demo<br>上面讲完了一些基本的知识，就来看看XLA在torch中如何使用，先大体感受一下LazyTensor的trace机制，下面是torch官方的例子</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch_xla</span><br><span class="line"><span class="keyword">import</span> torch_xla.core.xla_model <span class="keyword">as</span> xm</span><br><span class="line"></span><br><span class="line">t = torch.randn(<span class="number">2</span>, <span class="number">2</span>, device=xm.xla_device())</span><br><span class="line"><span class="built_in">print</span>(t.device)</span><br><span class="line"><span class="built_in">print</span>(t)</span><br></pre></td></tr></table></figure>
+<p>这里就是创建了一个(2, 2)大小的随机XLA tensor并打印，这里的打印是一个同步操作，会触发关于t的计算执行<br>再来看一个例子，初步理解一下LazyTensor机制下的trace</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch_xla</span><br><span class="line"><span class="keyword">import</span> torch_xla.core.xla_model <span class="keyword">as</span> xm</span><br><span class="line"></span><br><span class="line">a = torch.randn(<span class="number">2</span>, <span class="number">2</span>).to(device=xm.xla_device())</span><br><span class="line">b = torch.randn(<span class="number">2</span>, <span class="number">2</span>).to(device=xm.xla_device())</span><br><span class="line">c = torch.randn(<span class="number">2</span>, <span class="number">2</span>).to(device=xm.xla_device())</span><br><span class="line">c += a</span><br><span class="line">s_a = <span class="number">2</span></span><br><span class="line">s_b = <span class="number">40</span></span><br><span class="line">ans = s_a + s_b</span><br><span class="line">xm.mark_step()</span><br><span class="line"><span class="built_in">print</span>(ans)</span><br><span class="line"><span class="built_in">print</span>(b)</span><br></pre></td></tr></table></figure>
+<p>这里的mark_step是强制切分计算图，让xla进行编译执行。这里三个tensor都是通过parameters的方式传输到device上的，所以这里只有一个tensor计算，对于标量并不会被trace，而对于tensor变量b由于他是一个param，param在xla中是被标记为live-out的且这里不参与计算，所以也是不会被trace的。最终这里的代码只会对c+&#x3D;a进行编译，且只有一张计算图产生。详细的LazyTensor机制留到下一篇笔记中叙述。</p>
+<h1 id="JIT编译链路"><a href="#JIT编译链路" class="headerlink" title="JIT编译链路"></a>JIT编译链路</h1><p>XLA中当前有两种编译方式，默认是JIT编译，也可以进行AOT编译。大多数场景下JIT编译便能满足需求，但有时还是需要进行AOT编译，比如模型中有动态性，但可能产生的计算图是比较有限的，那么便可以通过预先进行AOT编译并载入编译缓存中来减少运行时的重编译带来的开销。我们这里先只关注JIT编译的链路，来看下图：<br><img src="https://github.com/Ronbogo/picx-images-hosting/raw/master/v2-e5780e7b0d8126d30b4613a6a9bc8f53_1440w.5tqzoiy77v.webp"><br>添加图片注释，不超过 140 字（可选）<br>在该图中仅画出了一部分编译链路上的流程，缺失了非常多的细节，如果有误请指正<br>首先，在pytorch中会基于LazyTensor机制捕获tensor计算相关，并映射成ATen算子，ATen算子会在Torch XLA中映射到对应的XLA算子，如果出现无法映射的将按照常规流程进行而不走编译，当然现在XLA中算子已经非常完善了不太可能出现映射层面的问题。转换成XLA算子的同时会将ATen Tensor转化成XLA Tensor，然后这里会将计算图构建出来，存储在XLA Graph Executor中，当遇到mark_step或是同步操作时将触发编译流程。<br>在编译流程中，首先由XLA Graph Executor进行HLO的生成，然后他会将HLO发射到XLA中的PjRT进行对target的转发，然后进入平台对应的Compiler中进行多个计算图级别的Pass优化和内存规划，然后会进行到LLVM IR的Codegen，这里Codegen部分的几条路径在基本知识中有提及，这里不多赘述。LLVM进行平台相关的Codegen和优化。编译完成后返回一个Executable。以及Torch XLA通过计算图哈希判断是否使用编译缓存。<br>在执行流程中，仍是由XLA Graph Executor进行触发，然后PjRT Runtime进行对应平台的转发。Runtime中一个计算图是先进行内存分配后再进行对Thunk序列的执行，这里的Thunk可以理解为算子，但是是经过融合等操作优化后的。<br>以上就是基本的编译链路，具体细节在后面文章中再写</p>
+<h1 id="一些有用的入门资料"><a href="#一些有用的入门资料" class="headerlink" title="一些有用的入门资料"></a>一些有用的入门资料</h1><p>OpenXLA社区的油管频道：<a target="_blank" rel="noopener" href="https://www.youtube.com/@openxla/videos">https://www.youtube.com/@openxla/videos</a> 里面有不少对XLA模块的介绍，B站也有人搬运了一部分<br>pytorch&#x2F;xla项目内的文档：GitHub - pytorch&#x2F;xla: Enabling PyTorch on XLA Devices (e.g. Google TPU) 介绍了很多有用的东西，比如fsdp，xla debug方式，op lowering等等<br>OpenXLA社区的文档：<a target="_blank" rel="noopener" href="https://openxla.org/xla">https://openxla.org/xla</a> 介绍了XLA中的一些部分和机制<br>Pytorch的XLA使用文档：PyTorch on XLA Devices 比较上层，偏向于使用层面<br>源码与对应commit，XLA的文档资源是较为匮乏的，很多时候还是要去读源码，以及读源码中的注释时注意鉴别</p>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">Home</a></li>
+        
+          <li><a href="/about/">About</a></li>
+        
+          <li><a href="/archives/">Writing</a></li>
+        
+          <li><a target="_blank" rel="noopener" href="http://github.com/probberechts">Projects</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#XLA%E3%80%81torch-xla%E7%9A%84%E4%B8%80%E4%BA%9B%E5%9F%BA%E6%9C%AC%E7%9F%A5%E8%AF%86"><span class="toc-number">2.</span> <span class="toc-text">XLA、torch_xla的一些基本知识</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#OpenXLA-XLA"><span class="toc-number">2.1.</span> <span class="toc-text">OpenXLA&#x2F;XLA</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Pytorch-XLA"><span class="toc-number">2.2.</span> <span class="toc-text">Pytorch&#x2F;XLA</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#JIT%E7%BC%96%E8%AF%91%E9%93%BE%E8%B7%AF"><span class="toc-number">3.</span> <span class="toc-text">JIT编译链路</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%80%E4%BA%9B%E6%9C%89%E7%94%A8%E7%9A%84%E5%85%A5%E9%97%A8%E8%B5%84%E6%96%99"><span class="toc-number">4.</span> <span class="toc-text">一些有用的入门资料</span></a></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://example.com/2024/09/24/torch-xla-0/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://example.com/2024/09/24/torch-xla-0/&text="><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://example.com/2024/09/24/torch-xla-0/&title="><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://example.com/2024/09/24/torch-xla-0/&is_video=false&description="><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=&body=Check out this article: http://example.com/2024/09/24/torch-xla-0/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://example.com/2024/09/24/torch-xla-0/&title="><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://example.com/2024/09/24/torch-xla-0/&title="><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://example.com/2024/09/24/torch-xla-0/&title="><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://example.com/2024/09/24/torch-xla-0/&title="><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://example.com/2024/09/24/torch-xla-0/&name=&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://example.com/2024/09/24/torch-xla-0/&t="><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2016-2024
+    John Doe
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="http://github.com/probberechts">Projects</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>
