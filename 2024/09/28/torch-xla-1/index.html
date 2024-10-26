@@ -16,7 +16,7 @@
 <meta property="og:image" content="https://github.com/Ronbogo/picx-images-hosting/raw/master/screenshot-20241024-191634.9nzsfgpv0c.webp">
 <meta property="og:image" content="https://github.com/Ronbogo/picx-images-hosting/raw/master/Screenshot-2024-10-24-at-16.46.47.32hyofk72n.webp">
 <meta property="article:published_time" content="2024-09-27T21:40:44.000Z">
-<meta property="article:modified_time" content="2024-10-24T11:36:31.365Z">
+<meta property="article:modified_time" content="2024-10-24T12:06:32.478Z">
 <meta property="article:author" content="Ronbogo">
 <meta property="article:tag" content="AI Compiler">
 <meta property="article:tag" content="XLA">
@@ -169,14 +169,14 @@
 <p><img src="https://github.com/Ronbogo/picx-images-hosting/raw/master/screenshot-20241024-191634.9nzsfgpv0c.webp"></p>
 <p>值得注意的是，如果我们可以在某一维度达到最优解或是一个足够好的解，那么我们可以将上述问题分解成两个独立问题，在XLA中便是如此。在时间维度上，XLA是一般通过一个操作序列（一个HLO instruction的序列）来表达一个计算图的（一个计算图在HLO层面是一个HLO Module，一般来讲一个HLO Module只包含一个HLO Computation），如果假设在空间维度可以达到最优，那么对于一种序列的排列，简单得将每个instruction时存活的buffer大小相加便能模拟出这种排列的峰值，而这样找到一个比较好的排列我们可以称之为schedule。</p>
 <p>而在空间维度上，由于操作的顺序已经确定了，剩下的问题便是如何规划重用和offset，这部分我们可以称为assignment。</p>
-<p>还需要关注的一个点是runtime的allocation情况，既然我们做了静态的显存规划，那么如果我们还像通常框架中在需要时才进行分配那就有点不合适了，所以xla runtime的分配是在计算图执行算子序列之前的，会将一个个buffer allocation按之前定下的顺序放下去，运行时的情况类似于一个内存池，每次算子是是从一块已经分配了的allocation中取一个slice作为输入&#x2F;输出显存块的。值得注意的是这些buffer allocation的总和即是显存峰值，并且他们的释放是在整个计算图执行完之后，这意味着真正的算子序列执行过程中除了少量的thread-local等的分配变化整体显存将一直保持在一个稳定值。</p>
+<p>还需要关注的一个点是runtime的allocation情况，既然我们做了静态的显存规划，那么如果我们还像通常框架中在需要时才进行分配那就有点不合适了，所以xla runtime的分配是在计算图执行算子序列之前的，会将一个个buffer allocation按之前定下的顺序放下去，运行时的情况类似于一个内存池，每次算子从一块已经分配了的allocation中取一个slice作为输入&#x2F;输出显存块的。值得注意的是这些buffer allocation的总和即是显存峰值，并且他们的释放是在整个计算图执行完之后，这意味着真正的算子序列执行过程中除了少量的thread-local等的分配变化整体显存将一直保持在一个稳定值。</p>
 <p>这个部分看起来非常完美但有时也有一些问题，比如对显存的可观测性影响是比较大的，不太能非常好的像torch内置的profile一样将显存的每个部分由什么使用（是activation还是gradient或者优化器参数）可视化出来对运行时显存组成进行分析，这些在做sharding相关优化时可能会有一些额外的工作量。不过这种模型与细粒度IR之间的gap造成的问题在编译中可以说是广泛存在的。</p>
 <h3 id="编译期规划（schedule-assignment）"><a href="#编译期规划（schedule-assignment）" class="headerlink" title="编译期规划（schedule &amp; assignment）"></a>编译期规划（schedule &amp; assignment）</h3><h4 id="抽象"><a href="#抽象" class="headerlink" title="抽象"></a>抽象</h4><p>首先来讲一下XLA中相关的一些抽象，这块如果有一些传统的编译知识背景可能，由于笔者基础比较薄弱，这边就提一下。在assignment进行一些reuse和combine之前hlo allocation是最接近真实分配的抽象层次，如果assignment不做优化的话就是一个allocation对应一个hlo buffer, 而一个hlo buffer内部是可以有多个hlo value的（根据不同hlo instruction，比如 while instruction， 这个具体内容可以在<code>hlo_buffer.h</code>这个文件的注释里找到举例），而hlo value是SSA的，并且也是dataflow analysis和alias analysis的直接分析对象。值得注意的是内存分配的单位是hlo buffer。其实还有一些相关概念如hlo use、hlo position等，在这篇就暂时不展开了</p>
 <h4 id="Schedule"><a href="#Schedule" class="headerlink" title="Schedule"></a>Schedule</h4><p>Schedule部分是以pass形式出现的，后面会以<code>LatencyHidingScheduler</code>为例，而其实pass中除了对instructions进行重排的还有一个显存优化非常相关的pass——<code>HloRematerialization</code>， 这个pass虽然名字叫rematerialization但里面其实不止有这一种优化技巧，里面有三种优化技术：compress，recompute，host_offload。想必做过MLsys特别是分布式训练的应该对他们再熟悉不过，不过这篇文章不打算在这里展开，这个话题感觉单独写一篇会更好。</p>
 <p>在<code>LatencyHidingScheduler</code>这个Pass中，首先会找到有掩盖机会的computation，即存在异步的通讯操作。然后对于每一个有优化机会的computation从根部（即计算图上最后一个节点），倒着去排计算图，然后会从可选集中启发式得选最佳候选（具体规则见<code>ReadySetLt</code>类中），同时记录memory pressure。在这个过程结束后如果memory peek大于会加强memory约束重新调度数次。</p>
 <h4 id="Assignment-Bufferization"><a href="#Assignment-Bufferization" class="headerlink" title="Assignment&#x2F;Bufferization"></a>Assignment&#x2F;Bufferization</h4><p>XLA中这个部分比较重点的个人认为是对buffer根据生命周期分类的处理</p>
 <p>首先通过Live range分析和hlo sequence我们知道了每一块hlo buffer的生命周期和使用情况然后XLA会先把preset的分好，然后把剩余的按大小排序，从大到小，然后遇到非temp的buffer直接分，遇到temp的先尝试找之前分下去的有没有可以复用的，如果有，那么合成一个allocation，如果没有就先放着，后面统一处理。</p>
-<p>然后我们就要处理temp部分了，首先这些buffer会通过heap simulator进行分配的模拟，模拟中采用两种分配策略，这里分配策略可以理解为一种像俄罗斯方块的方式，两种策略分别为size优先的贪心和lifetime优先的贪心，就是先把哪种buffr放到offset更低的位置。得到两种策略的分配结果后会取较好的那个就行combine，即将temp buffer们变成一个大的allocation在运行时一次性分配。</p>
+<p>然后我们就要处理temp部分了，首先这些buffer会通过heap simulator进行分配的模拟，模拟中采用两种分配策略，这里分配策略可以理解为一种像俄罗斯方块的方式，两种策略分别为size优先的贪心和lifetime优先的贪心，就是先把哪种buffer放到offset更低的位置。得到两种策略的分配结果后会取较好的那个就行combine，即将temp buffer们变成一个大的allocation在运行时一次性分配。</p>
 <p>关于这部分的信息可以开启dump IR的选项来获取信息，详细可见<a target="_blank" rel="noopener" href="https://github.com/pytorch/xla/blob/master/docs/source/learn/troubleshoot.md">这里</a>。会有一个xxx-buffer-assignment的文件，里面有详细的allocation组成，buffer lifetime等</p>
 <h3 id="运行期分配（allocator）"><a href="#运行期分配（allocator）" class="headerlink" title="运行期分配（allocator）"></a>运行期分配（allocator）</h3><p>运行期做的事情是将编译期规划好的，主要就是根据用户选择的分配器进行实际对allocation的分配，, 现在再NV GPU上主要选择是两种一个是GpuCudaMallocAsyncAllocator, 采用cuda memory pool和async内存操作；另一个是BFCAllocator，使用BFC策略，Doug Lea’s malloc。底层采用cuda同步api。</p>
 <p>值得注意的是运行期分配是在真正的计算执行之前的，也就是计算图最开始的部分。</p>
