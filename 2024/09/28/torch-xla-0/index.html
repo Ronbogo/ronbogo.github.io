@@ -6,16 +6,16 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="HandheldFriendly" content="True">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
-    <meta name="description" content="Torch XLA 入门笔记（0）—— 简介前言机缘巧合下接触到了XLA一些相关工作，发现网上资料甚少，正好有个写文档的活就顺便在知乎梳理一下。笔者水平极其有限，刚接触 DL Compiler 不久，如笔记中有疏漏请各位大佬不吝赐教PS：由于OpenXLA项目本身迭代较快，笔记中的描述是基于以下commit的repoOpenXLA：8e24878PyTorch&#x2F;XLA:  786484d">
+    <meta name="description" content="前言机缘巧合下接触到了XLA一些相关工作，发现网上资料甚少，正好有个写文档的活就顺便在知乎梳理一下。笔者水平极其有限，刚接触 DL Compiler 不久，如笔记中有疏漏请各位大佬不吝赐教PS：由于OpenXLA项目本身迭代较快，笔记中的描述是基于以下commit的repoOpenXLA：8e24878PyTorch&#x2F;XLA:  786484d XLA、torch_xla的一些基本知识O">
 <meta property="og:type" content="article">
-<meta property="og:title" content="torch-xla-0">
+<meta property="og:title" content="Torch XLA 入门笔记（0）—— 简介">
 <meta property="og:url" content="http://example.com/2024/09/28/torch-xla-0/index.html">
 <meta property="og:site_name" content="Ronbogo&#39;s blog">
-<meta property="og:description" content="Torch XLA 入门笔记（0）—— 简介前言机缘巧合下接触到了XLA一些相关工作，发现网上资料甚少，正好有个写文档的活就顺便在知乎梳理一下。笔者水平极其有限，刚接触 DL Compiler 不久，如笔记中有疏漏请各位大佬不吝赐教PS：由于OpenXLA项目本身迭代较快，笔记中的描述是基于以下commit的repoOpenXLA：8e24878PyTorch&#x2F;XLA:  786484d">
+<meta property="og:description" content="前言机缘巧合下接触到了XLA一些相关工作，发现网上资料甚少，正好有个写文档的活就顺便在知乎梳理一下。笔者水平极其有限，刚接触 DL Compiler 不久，如笔记中有疏漏请各位大佬不吝赐教PS：由于OpenXLA项目本身迭代较快，笔记中的描述是基于以下commit的repoOpenXLA：8e24878PyTorch&#x2F;XLA:  786484d XLA、torch_xla的一些基本知识O">
 <meta property="og:locale">
 <meta property="og:image" content="https://github.com/Ronbogo/picx-images-hosting/raw/master/v2-e5780e7b0d8126d30b4613a6a9bc8f53_1440w.5tqzoiy77v.webp">
 <meta property="article:published_time" content="2024-09-27T21:40:02.000Z">
-<meta property="article:modified_time" content="2024-10-23T23:21:08.931Z">
+<meta property="article:modified_time" content="2024-10-26T15:02:43.717Z">
 <meta property="article:author" content="Ronbogo">
 <meta property="article:tag" content="AI Compiler">
 <meta property="article:tag" content="XLA">
@@ -40,7 +40,7 @@
       
     
     <!-- title -->
-    <title>torch-xla-0</title>
+    <title>Torch XLA 入门笔记（0）—— 简介</title>
     <!-- async scripts -->
     <!-- Google Analytics -->
 
@@ -100,23 +100,23 @@
     <div id="share" style="display: none">
       <ul>
   <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://example.com/2024/09/28/torch-xla-0/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://example.com/2024/09/28/torch-xla-0/&text=torch-xla-0"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://example.com/2024/09/28/torch-xla-0/&title=torch-xla-0"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://example.com/2024/09/28/torch-xla-0/&is_video=false&description=torch-xla-0"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
-  <li><a class="icon" href="mailto:?subject=torch-xla-0&body=Check out this article: http://example.com/2024/09/28/torch-xla-0/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://example.com/2024/09/28/torch-xla-0/&title=torch-xla-0"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://example.com/2024/09/28/torch-xla-0/&title=torch-xla-0"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://example.com/2024/09/28/torch-xla-0/&title=torch-xla-0"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://example.com/2024/09/28/torch-xla-0/&title=torch-xla-0"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://example.com/2024/09/28/torch-xla-0/&name=torch-xla-0&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://example.com/2024/09/28/torch-xla-0/&t=torch-xla-0"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://example.com/2024/09/28/torch-xla-0/&text=Torch XLA 入门笔记（0）—— 简介"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://example.com/2024/09/28/torch-xla-0/&title=Torch XLA 入门笔记（0）—— 简介"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://example.com/2024/09/28/torch-xla-0/&is_video=false&description=Torch XLA 入门笔记（0）—— 简介"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Torch XLA 入门笔记（0）—— 简介&body=Check out this article: http://example.com/2024/09/28/torch-xla-0/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://example.com/2024/09/28/torch-xla-0/&title=Torch XLA 入门笔记（0）—— 简介"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://example.com/2024/09/28/torch-xla-0/&title=Torch XLA 入门笔记（0）—— 简介"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://example.com/2024/09/28/torch-xla-0/&title=Torch XLA 入门笔记（0）—— 简介"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://example.com/2024/09/28/torch-xla-0/&title=Torch XLA 入门笔记（0）—— 简介"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://example.com/2024/09/28/torch-xla-0/&name=Torch XLA 入门笔记（0）—— 简介&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://example.com/2024/09/28/torch-xla-0/&t=Torch XLA 入门笔记（0）—— 简介"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
 </ul>
 
     </div>
     
     
       <div id="toc">
-        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Torch-XLA-%E5%85%A5%E9%97%A8%E7%AC%94%E8%AE%B0%EF%BC%880%EF%BC%89%E2%80%94%E2%80%94-%E7%AE%80%E4%BB%8B"><span class="toc-number">1.</span> <span class="toc-text">Torch XLA 入门笔记（0）—— 简介</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#XLA%E3%80%81torch-xla%E7%9A%84%E4%B8%80%E4%BA%9B%E5%9F%BA%E6%9C%AC%E7%9F%A5%E8%AF%86"><span class="toc-number">1.2.</span> <span class="toc-text">XLA、torch_xla的一些基本知识</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#OpenXLA-XLA"><span class="toc-number">1.2.1.</span> <span class="toc-text">OpenXLA&#x2F;XLA</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Pytorch-XLA"><span class="toc-number">1.2.2.</span> <span class="toc-text">Pytorch&#x2F;XLA</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#JIT%E7%BC%96%E8%AF%91%E9%93%BE%E8%B7%AF"><span class="toc-number">1.3.</span> <span class="toc-text">JIT编译链路</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E4%BA%9B%E6%9C%89%E7%94%A8%E7%9A%84%E5%85%A5%E9%97%A8%E8%B5%84%E6%96%99"><span class="toc-number">1.4.</span> <span class="toc-text">一些有用的入门资料</span></a></li></ol></li></ol>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#XLA%E3%80%81torch-xla%E7%9A%84%E4%B8%80%E4%BA%9B%E5%9F%BA%E6%9C%AC%E7%9F%A5%E8%AF%86"><span class="toc-number">2.</span> <span class="toc-text">XLA、torch_xla的一些基本知识</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#OpenXLA-XLA"><span class="toc-number">2.1.</span> <span class="toc-text">OpenXLA&#x2F;XLA</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Pytorch-XLA"><span class="toc-number">2.2.</span> <span class="toc-text">Pytorch&#x2F;XLA</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#JIT%E7%BC%96%E8%AF%91%E9%93%BE%E8%B7%AF"><span class="toc-number">3.</span> <span class="toc-text">JIT编译链路</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E4%BA%9B%E6%9C%89%E7%94%A8%E7%9A%84%E5%85%A5%E9%97%A8%E8%B5%84%E6%96%99"><span class="toc-number">4.</span> <span class="toc-text">一些有用的入门资料</span></a></li></ol>
       </div>
     
   </span>
@@ -129,7 +129,7 @@
   <header>
     
     <h1 class="posttitle p-name" itemprop="name headline">
-        torch-xla-0
+        Torch XLA 入门笔记（0）—— 简介
     </h1>
 
 
@@ -161,7 +161,7 @@
   
 
   <div class="content e-content" itemprop="articleBody">
-    <h1 id="Torch-XLA-入门笔记（0）——-简介"><a href="#Torch-XLA-入门笔记（0）——-简介" class="headerlink" title="Torch XLA 入门笔记（0）—— 简介"></a>Torch XLA 入门笔记（0）—— 简介</h1><h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>机缘巧合下接触到了XLA一些相关工作，发现网上资料甚少，正好有个写文档的活就顺便在知乎梳理一下。笔者水平极其有限，刚接触 DL Compiler 不久，如笔记中有疏漏请各位大佬不吝赐教<br>PS：由于OpenXLA项目本身迭代较快，笔记中的描述是基于以下commit的repo<br>OpenXLA：8e24878<br>PyTorch&#x2F;XLA:  786484d</p>
+    <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>机缘巧合下接触到了XLA一些相关工作，发现网上资料甚少，正好有个写文档的活就顺便在知乎梳理一下。笔者水平极其有限，刚接触 DL Compiler 不久，如笔记中有疏漏请各位大佬不吝赐教<br>PS：由于OpenXLA项目本身迭代较快，笔记中的描述是基于以下commit的repo<br>OpenXLA：8e24878<br>PyTorch&#x2F;XLA:  786484d</p>
 <h2 id="XLA、torch-xla的一些基本知识"><a href="#XLA、torch-xla的一些基本知识" class="headerlink" title="XLA、torch_xla的一些基本知识"></a>XLA、torch_xla的一些基本知识</h2><h3 id="OpenXLA-XLA"><a href="#OpenXLA-XLA" class="headerlink" title="OpenXLA&#x2F;XLA"></a>OpenXLA&#x2F;XLA</h3><p>XLA是一个Google主导开发的深度学习编译器，现在其开源版本由OpenXLA社区维护。XLA最早并不是一个独立项目，而是作为TF1的编译后端出现的。大家都知道TF1一个广为算法工程师诟病的点就是它基于静态图，导致了缺乏可观测性和易用性，但与此同时，可以通过编译优化的方式获得了性能收益。时至今日XLA仍然是采用静态图编译，对于对动态性的支持非常有限度（仅支持bounded dynamic shape），这便引入了由于动态性重编译的overhead，如LLM，多模态模型中存在一些有dynamic shape的算子会触发重编译，需要重新进行计算图的建立和编译，带来了不小的性能开销，这也是社区待解决的问题之一（或者社区可能选择不支持？）<br>然后再来看IR，XLA现在可以接受两种输入IR，分别是HLO和StableHLO，其中StableHLO是官方推荐的接入XLA的IR，它是一种MLIR方言，但由于XLA中心IR是HLO，StableHLO在编译流程中仍然要lowering到HLO，因此对于熟悉HLO的TF和Torch团队他们接入XLA都是直接使用HLO。在Codegen部分更早一些的架构中是两条路，对某些算子是走HLO-&gt;Triton IR-&gt;LLVM IR，HLO-&gt;MLIR-&gt;LLVM IR，，但现在社区在渐渐取缔MLIR，直接使用HLO-&gt;LLVM IR进行Codegen</p>
 <h3 id="Pytorch-XLA"><a href="#Pytorch-XLA" class="headerlink" title="Pytorch&#x2F;XLA"></a>Pytorch&#x2F;XLA</h3><p>torch xla虽然项目名也叫XLA，但实际上这个项目本身的内容可以将其看作XLA的一个前端。上面我们提到要接入到XLA进行编译需要转化为StableHLO或HLO，torch xla所做事情主要是将Pytorch中通过LazyTensor机制trace到的Aten计算图转化成HLO表示的计算图，并调用XLA进行编译和执行。<br>写一个demo<br>上面讲完了一些基本的知识，就来看看XLA在torch中如何使用，先大体感受一下LazyTensor的trace机制，下面是torch官方的例子</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch_xla</span><br><span class="line"><span class="keyword">import</span> torch_xla.core.xla_model <span class="keyword">as</span> xm</span><br><span class="line"></span><br><span class="line">t = torch.randn(<span class="number">2</span>, <span class="number">2</span>, device=xm.xla_device())</span><br><span class="line"><span class="built_in">print</span>(t.device)</span><br><span class="line"><span class="built_in">print</span>(t)</span><br></pre></td></tr></table></figure>
@@ -197,23 +197,23 @@
     
     
       <div id="toc-footer" style="display: none">
-        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Torch-XLA-%E5%85%A5%E9%97%A8%E7%AC%94%E8%AE%B0%EF%BC%880%EF%BC%89%E2%80%94%E2%80%94-%E7%AE%80%E4%BB%8B"><span class="toc-number">1.</span> <span class="toc-text">Torch XLA 入门笔记（0）—— 简介</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#XLA%E3%80%81torch-xla%E7%9A%84%E4%B8%80%E4%BA%9B%E5%9F%BA%E6%9C%AC%E7%9F%A5%E8%AF%86"><span class="toc-number">1.2.</span> <span class="toc-text">XLA、torch_xla的一些基本知识</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#OpenXLA-XLA"><span class="toc-number">1.2.1.</span> <span class="toc-text">OpenXLA&#x2F;XLA</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Pytorch-XLA"><span class="toc-number">1.2.2.</span> <span class="toc-text">Pytorch&#x2F;XLA</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#JIT%E7%BC%96%E8%AF%91%E9%93%BE%E8%B7%AF"><span class="toc-number">1.3.</span> <span class="toc-text">JIT编译链路</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E4%BA%9B%E6%9C%89%E7%94%A8%E7%9A%84%E5%85%A5%E9%97%A8%E8%B5%84%E6%96%99"><span class="toc-number">1.4.</span> <span class="toc-text">一些有用的入门资料</span></a></li></ol></li></ol>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#XLA%E3%80%81torch-xla%E7%9A%84%E4%B8%80%E4%BA%9B%E5%9F%BA%E6%9C%AC%E7%9F%A5%E8%AF%86"><span class="toc-number">2.</span> <span class="toc-text">XLA、torch_xla的一些基本知识</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#OpenXLA-XLA"><span class="toc-number">2.1.</span> <span class="toc-text">OpenXLA&#x2F;XLA</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Pytorch-XLA"><span class="toc-number">2.2.</span> <span class="toc-text">Pytorch&#x2F;XLA</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#JIT%E7%BC%96%E8%AF%91%E9%93%BE%E8%B7%AF"><span class="toc-number">3.</span> <span class="toc-text">JIT编译链路</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E4%BA%9B%E6%9C%89%E7%94%A8%E7%9A%84%E5%85%A5%E9%97%A8%E8%B5%84%E6%96%99"><span class="toc-number">4.</span> <span class="toc-text">一些有用的入门资料</span></a></li></ol>
       </div>
     
 
     <div id="share-footer" style="display: none">
       <ul>
   <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://example.com/2024/09/28/torch-xla-0/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://example.com/2024/09/28/torch-xla-0/&text=torch-xla-0"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://example.com/2024/09/28/torch-xla-0/&title=torch-xla-0"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://example.com/2024/09/28/torch-xla-0/&is_video=false&description=torch-xla-0"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" href="mailto:?subject=torch-xla-0&body=Check out this article: http://example.com/2024/09/28/torch-xla-0/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://example.com/2024/09/28/torch-xla-0/&title=torch-xla-0"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://example.com/2024/09/28/torch-xla-0/&title=torch-xla-0"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://example.com/2024/09/28/torch-xla-0/&title=torch-xla-0"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://example.com/2024/09/28/torch-xla-0/&title=torch-xla-0"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://example.com/2024/09/28/torch-xla-0/&name=torch-xla-0&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://example.com/2024/09/28/torch-xla-0/&t=torch-xla-0"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://example.com/2024/09/28/torch-xla-0/&text=Torch XLA 入门笔记（0）—— 简介"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://example.com/2024/09/28/torch-xla-0/&title=Torch XLA 入门笔记（0）—— 简介"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://example.com/2024/09/28/torch-xla-0/&is_video=false&description=Torch XLA 入门笔记（0）—— 简介"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Torch XLA 入门笔记（0）—— 简介&body=Check out this article: http://example.com/2024/09/28/torch-xla-0/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://example.com/2024/09/28/torch-xla-0/&title=Torch XLA 入门笔记（0）—— 简介"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://example.com/2024/09/28/torch-xla-0/&title=Torch XLA 入门笔记（0）—— 简介"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://example.com/2024/09/28/torch-xla-0/&title=Torch XLA 入门笔记（0）—— 简介"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://example.com/2024/09/28/torch-xla-0/&title=Torch XLA 入门笔记（0）—— 简介"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://example.com/2024/09/28/torch-xla-0/&name=Torch XLA 入门笔记（0）—— 简介&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://example.com/2024/09/28/torch-xla-0/&t=Torch XLA 入门笔记（0）—— 简介"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
 </ul>
 
     </div>
