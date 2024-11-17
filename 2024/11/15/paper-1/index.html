@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="Intro当前问题： 对应用开发者而言LM应用开发复杂度高 执行和内存使用不够高效，现有推理引擎对workload感知不足  优化机会： 跨调用的KV cache复用 对一些结构化数据（e.g. JSON）可以一次decode多个token  架构设计：  作为python-embedded DSL，提供一些生成式和并行相关原语 解释器好像很轻量，管理原语异步执行， 同步控制，跨程序并行 runt">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SGLang: Efficient Execution of Structured Language Model Programs">
+<meta property="og:url" content="http://example.com/2024/11/15/paper-1/index.html">
+<meta property="og:site_name" content="Ronbogo&#39;s blog">
+<meta property="og:description" content="Intro当前问题： 对应用开发者而言LM应用开发复杂度高 执行和内存使用不够高效，现有推理引擎对workload感知不足  优化机会： 跨调用的KV cache复用 对一些结构化数据（e.g. JSON）可以一次decode多个token  架构设计：  作为python-embedded DSL，提供一些生成式和并行相关原语 解释器好像很轻量，管理原语异步执行， 同步控制，跨程序并行 runt">
+<meta property="og:locale">
+<meta property="og:image" content="https://github.com/Ronbogo/picx-images-hosting/raw/master/screenshot-20241115-184618.5q7fwzf6d9.webp">
+<meta property="og:image" content="https://github.com/Ronbogo/picx-images-hosting/raw/master/screenshot-20241115-195244.45hoxie3ok.webp">
+<meta property="article:published_time" content="2024-11-15T09:27:42.000Z">
+<meta property="article:modified_time" content="2024-11-17T11:01:43.264Z">
+<meta property="article:author" content="Ronbogo">
+<meta property="article:tag" content="Paper">
+<meta property="article:tag" content="Inference">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://github.com/Ronbogo/picx-images-hosting/raw/master/screenshot-20241115-184618.5q7fwzf6d9.webp">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/logo.jpg">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/logo.jpg" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/logo.jpg">
+        
+      
+    
+    <!-- title -->
+    <title>SGLang: Efficient Execution of Structured Language Model Programs</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="Menu"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="Menu"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="Top" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="http://github.com/ronbogo">Projects</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        
+        <li><a class="icon" aria-label="Next post" href="/2024/11/14/life-3/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="Back to top" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="Share post" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://example.com/2024/11/15/paper-1/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://example.com/2024/11/15/paper-1/&text=SGLang: Efficient Execution of Structured Language Model Programs"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://example.com/2024/11/15/paper-1/&title=SGLang: Efficient Execution of Structured Language Model Programs"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://example.com/2024/11/15/paper-1/&is_video=false&description=SGLang: Efficient Execution of Structured Language Model Programs"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=SGLang: Efficient Execution of Structured Language Model Programs&body=Check out this article: http://example.com/2024/11/15/paper-1/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://example.com/2024/11/15/paper-1/&title=SGLang: Efficient Execution of Structured Language Model Programs"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://example.com/2024/11/15/paper-1/&title=SGLang: Efficient Execution of Structured Language Model Programs"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://example.com/2024/11/15/paper-1/&title=SGLang: Efficient Execution of Structured Language Model Programs"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://example.com/2024/11/15/paper-1/&title=SGLang: Efficient Execution of Structured Language Model Programs"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://example.com/2024/11/15/paper-1/&name=SGLang: Efficient Execution of Structured Language Model Programs&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://example.com/2024/11/15/paper-1/&t=SGLang: Efficient Execution of Structured Language Model Programs"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Intro"><span class="toc-number">1.</span> <span class="toc-text">Intro</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%BD%93%E5%89%8D%E9%97%AE%E9%A2%98%EF%BC%9A"><span class="toc-number">1.1.</span> <span class="toc-text">当前问题：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BC%98%E5%8C%96%E6%9C%BA%E4%BC%9A%EF%BC%9A"><span class="toc-number">1.2.</span> <span class="toc-text">优化机会：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1%EF%BC%9A"><span class="toc-number">1.3.</span> <span class="toc-text">架构设计：</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Programming-Model"><span class="toc-number">2.</span> <span class="toc-text">Programming Model</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Efficient-KV-Cache-Reuse-with-RadixAttention"><span class="toc-number">3.</span> <span class="toc-text">Efficient KV Cache Reuse with RadixAttention</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Efficient-Constrained-Decoding-with-Compressed-Finite-State-Machine"><span class="toc-number">4.</span> <span class="toc-text">Efficient Constrained Decoding with Compressed Finite State Machine</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Efficient-Endpoint-Calling-with-API-Speculative-Execution"><span class="toc-number">5.</span> <span class="toc-text">Efficient Endpoint Calling with API Speculative Execution</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Evaluation"><span class="toc-number">6.</span> <span class="toc-text">Evaluation</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Related-Work"><span class="toc-number">7.</span> <span class="toc-text">Related Work</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Future-Directions-and-Conclusion"><span class="toc-number">8.</span> <span class="toc-text">Future Directions and Conclusion</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%AA%E4%BA%BA%E6%84%9F%E6%83%B3"><span class="toc-number">9.</span> <span class="toc-text">个人感想</span></a></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        SGLang: Efficient Execution of Structured Language Model Programs
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">Ronbogo</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2024-11-15T09:27:42.000Z" class="dt-published" itemprop="datePublished">2024-11-15</time>
+        
+      
+    </div>
+
+
+      
+
+      
+    <div class="article-tag">
+        <i class="fa-solid fa-tag"></i>
+        <a class="p-category" href="/tags/Inference/" rel="tag">Inference</a>, <a class="p-category" href="/tags/Paper/" rel="tag">Paper</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <h2 id="Intro"><a href="#Intro" class="headerlink" title="Intro"></a>Intro</h2><h3 id="当前问题："><a href="#当前问题：" class="headerlink" title="当前问题："></a>当前问题：</h3><ol>
+<li>对应用开发者而言LM应用开发复杂度高</li>
+<li><strong>执行和内存使用不够高效</strong>，现有推理引擎对workload感知不足</li>
+</ol>
+<h3 id="优化机会："><a href="#优化机会：" class="headerlink" title="优化机会："></a>优化机会：</h3><ol>
+<li>跨调用的KV cache复用</li>
+<li>对一些结构化数据（e.g. JSON）可以一次decode多个token</li>
+</ol>
+<h3 id="架构设计："><a href="#架构设计：" class="headerlink" title="架构设计："></a>架构设计：</h3><p><img src="https://github.com/Ronbogo/picx-images-hosting/raw/master/screenshot-20241115-184618.5q7fwzf6d9.webp"></p>
+<ol>
+<li>作为python-embedded DSL，提供一些生成式和并行相关原语</li>
+<li>解释器好像很轻量，管理原语异步执行， 同步控制，跨程序并行</li>
+<li><strong>runtime优化</strong><ol>
+<li>RadixAttention: 对应上面的KV cache复用，不直接丢弃，用radix tree(一种压缩了的trie，边上可以不止一个字符)跟踪LRU替换</li>
+<li>Compressed finite state machine: 对应上面的对结构化输出可以压缩，一次decode多个token。</li>
+<li>API speculative execution：针对API-only模型（GPT-4）的多个call（暂时不太懂，后面细说）</li>
+</ol>
+</li>
+</ol>
+<h2 id="Programming-Model"><a href="#Programming-Model" class="headerlink" title="Programming Model"></a>Programming Model</h2><p>介绍了一些原语，偏易用性。对比其他类似DSL，SGLang更注重runtime优化，另外更高层次的语言（如DSPy）可以编译到SGLang</p>
+<p>这部分提到可以不走解释器走编译，会有一些图编译机会，详细在附录</p>
+<p>看了下附录没提具体的图优化策略，倒是提了一种非常激进的优化，用LLM在编译期预处理用户的prompt，在语义不变的前提下去对自然语言做变换，使其与前面的prompt有更长共同前缀，感觉为了利用KV cache有点刻意了，可能主要还是想留下个图编译的口子，实验也表明错误率还比较高（3&#x2F;15）。</p>
+<h2 id="Efficient-KV-Cache-Reuse-with-RadixAttention"><a href="#Efficient-KV-Cache-Reuse-with-RadixAttention" class="headerlink" title="Efficient KV Cache Reuse with RadixAttention"></a>Efficient KV Cache Reuse with RadixAttention</h2><p>这部分感觉算是这篇文章的主要亮点了。</p>
+<p><img src="https://github.com/Ronbogo/picx-images-hosting/raw/master/screenshot-20241115-195244.45hoxie3ok.webp"></p>
+<p>KV cache利用前缀，那就用一个数据结构来索引前缀并基于这个做个调度。</p>
+<p>对于字符串维护前缀很容易想到trie，radix tree就是把trie压缩一下，比如abc，ab，这个ab没有分叉就能压到一条边上。实验部分提到了对于多模态场景对视频或图片做一个hash转换即可。</p>
+<p>前缀维护好了，以节点为单位用LRU策略替换缓存。</p>
+<p>然后需要一种调度来充分利用前缀，就是让临近的最好有最长的公共前缀。对于静态的离线场景就很显然，radix树上的一种dfs序即最优。然后对于在线场景，其实可以做到类似，不过应该算局部优。对于延时要求比较高的场景，我看文章意思是可以通过限制reorder的范围做到。</p>
+<p>考虑分布式场景，这些数据结构都在cpu，对TP来说没啥影响。DP的话每个worker维护自己的子树，router维护元信息树，也是个trie一样的树。来一个请求通过元信息树查询找到有最长前缀的worker分发到那里。然后worker处子树变更要先提交到提交队列，再操作，便于元信息同步。很显然，这边的策略是倾向数据局部性的，并行效率会有牺牲。这里可能可以有更好的trade-off。</p>
+<h2 id="Efficient-Constrained-Decoding-with-Compressed-Finite-State-Machine"><a href="#Efficient-Constrained-Decoding-with-Compressed-Finite-State-Machine" class="headerlink" title="Efficient Constrained Decoding with Compressed Finite State Machine"></a>Efficient Constrained Decoding with Compressed Finite State Machine</h2><p>在output有要求格式情况下，可以一次decode多个token，其实就是状态机有唯一转移的时候压成一个状态，和trie压成radix tree一个道理。其实这块感觉应该还有不少工程层面的工作量。</p>
+<h2 id="Efficient-Endpoint-Calling-with-API-Speculative-Execution"><a href="#Efficient-Endpoint-Calling-with-API-Speculative-Execution" class="headerlink" title="Efficient Endpoint Calling with API Speculative Execution"></a>Efficient Endpoint Calling with API Speculative Execution</h2><p>这个其实很应用框架层面了，用户用api调用的方式时可能有时候LLM会多吐出来几个和后面询问相关的信息，所以就让它多吐几个token然后可能可以用于后面询问匹配，节省延时和api调用次数。当然，原文说with careful prompt engineering。</p>
+<h2 id="Evaluation"><a href="#Evaluation" class="headerlink" title="Evaluation"></a>Evaluation</h2><p>SGlang的实现是用Pytorch（有用FlashInfer和Triton的自定义CUDA算子）。</p>
+<p>提一下RadixAttention的overhead吧，文章用没有前缀可以复用的样例去测大概有0.3%</p>
+<h2 id="Related-Work"><a href="#Related-Work" class="headerlink" title="Related Work"></a>Related Work</h2><p>先是对比偏推理引擎层面的KV cache相关工作，vLLM和ChunkedAttention对KV cache的reuse不充分，主要在算子层做优化的有HydraGen, FlashInfer, and ChunkedAttention，API Serve和LLM-SQL是关系型数据库和KV cache结合。</p>
+<p>后是对比应用框架的工作，优势是可以兼容，然后又有与推理引擎层的优化结合。</p>
+<h2 id="Future-Directions-and-Conclusion"><a href="#Future-Directions-and-Conclusion" class="headerlink" title="Future Directions and Conclusion"></a>Future Directions and Conclusion</h2><h2 id="个人感想"><a href="#个人感想" class="headerlink" title="个人感想"></a>个人感想</h2><p>其实优化个人感觉都还比较trivial，算是玩数据结构玩得比较明白吧。其实两个比较大的优化都来自于状压思想。</p>
+<p>其实至少对我而言我是觉得整篇的重点就是RadixAttention，感觉改名叫这个更好，SGlang中lang的部分其实没做什么很新的东西。</p>
+<p>还有就是主要优化在于数据局部性，感觉对于倾向低延时的大规模分布式推理场景应该是会差一点。感觉可能可以有一种更好的动态树来维护分布式场景的调度。</p>
+<p>这篇文章有种“我全都要”的感觉，一会感觉很易用的应用框架，一会感觉想弄个性能很好的推理引擎，明明都算得上是两种系统，导致对比别的系统的时候有点东一榔头西一棒锤，主打想要一个你们有的我全要，我现在没有的也得有个todo在那，上可兼容别的DSL转过来，下可图编译优化，甚至LLM对prompt优化这种东西都搞出来了，只能说野心很大，主要还是想像vLLM一样直接能把社区做起来吧。</p>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">Home</a></li>
+        
+          <li><a href="/about/">About</a></li>
+        
+          <li><a href="/archives/">Writing</a></li>
+        
+          <li><a target="_blank" rel="noopener" href="http://github.com/ronbogo">Projects</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Intro"><span class="toc-number">1.</span> <span class="toc-text">Intro</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%BD%93%E5%89%8D%E9%97%AE%E9%A2%98%EF%BC%9A"><span class="toc-number">1.1.</span> <span class="toc-text">当前问题：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BC%98%E5%8C%96%E6%9C%BA%E4%BC%9A%EF%BC%9A"><span class="toc-number">1.2.</span> <span class="toc-text">优化机会：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1%EF%BC%9A"><span class="toc-number">1.3.</span> <span class="toc-text">架构设计：</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Programming-Model"><span class="toc-number">2.</span> <span class="toc-text">Programming Model</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Efficient-KV-Cache-Reuse-with-RadixAttention"><span class="toc-number">3.</span> <span class="toc-text">Efficient KV Cache Reuse with RadixAttention</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Efficient-Constrained-Decoding-with-Compressed-Finite-State-Machine"><span class="toc-number">4.</span> <span class="toc-text">Efficient Constrained Decoding with Compressed Finite State Machine</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Efficient-Endpoint-Calling-with-API-Speculative-Execution"><span class="toc-number">5.</span> <span class="toc-text">Efficient Endpoint Calling with API Speculative Execution</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Evaluation"><span class="toc-number">6.</span> <span class="toc-text">Evaluation</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Related-Work"><span class="toc-number">7.</span> <span class="toc-text">Related Work</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Future-Directions-and-Conclusion"><span class="toc-number">8.</span> <span class="toc-text">Future Directions and Conclusion</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%AA%E4%BA%BA%E6%84%9F%E6%83%B3"><span class="toc-number">9.</span> <span class="toc-text">个人感想</span></a></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://example.com/2024/11/15/paper-1/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://example.com/2024/11/15/paper-1/&text=SGLang: Efficient Execution of Structured Language Model Programs"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://example.com/2024/11/15/paper-1/&title=SGLang: Efficient Execution of Structured Language Model Programs"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://example.com/2024/11/15/paper-1/&is_video=false&description=SGLang: Efficient Execution of Structured Language Model Programs"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=SGLang: Efficient Execution of Structured Language Model Programs&body=Check out this article: http://example.com/2024/11/15/paper-1/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://example.com/2024/11/15/paper-1/&title=SGLang: Efficient Execution of Structured Language Model Programs"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://example.com/2024/11/15/paper-1/&title=SGLang: Efficient Execution of Structured Language Model Programs"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://example.com/2024/11/15/paper-1/&title=SGLang: Efficient Execution of Structured Language Model Programs"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://example.com/2024/11/15/paper-1/&title=SGLang: Efficient Execution of Structured Language Model Programs"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://example.com/2024/11/15/paper-1/&name=SGLang: Efficient Execution of Structured Language Model Programs&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://example.com/2024/11/15/paper-1/&t=SGLang: Efficient Execution of Structured Language Model Programs"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2024
+    Ronbogo
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="http://github.com/ronbogo">Projects</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>
