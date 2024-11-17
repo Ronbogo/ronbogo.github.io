@@ -16,7 +16,7 @@
 <meta property="og:image" content="https://github.com/Ronbogo/picx-images-hosting/raw/master/screenshot-20241115-184618.5q7fwzf6d9.webp">
 <meta property="og:image" content="https://github.com/Ronbogo/picx-images-hosting/raw/master/screenshot-20241115-195244.45hoxie3ok.webp">
 <meta property="article:published_time" content="2024-11-15T09:27:42.000Z">
-<meta property="article:modified_time" content="2024-11-17T11:01:43.264Z">
+<meta property="article:modified_time" content="2024-11-17T11:12:02.840Z">
 <meta property="article:author" content="Ronbogo">
 <meta property="article:tag" content="Paper">
 <meta property="article:tag" content="Inference">
@@ -189,7 +189,7 @@
 <p>KV cache利用前缀，那就用一个数据结构来索引前缀并基于这个做个调度。</p>
 <p>对于字符串维护前缀很容易想到trie，radix tree就是把trie压缩一下，比如abc，ab，这个ab没有分叉就能压到一条边上。实验部分提到了对于多模态场景对视频或图片做一个hash转换即可。</p>
 <p>前缀维护好了，以节点为单位用LRU策略替换缓存。</p>
-<p>然后需要一种调度来充分利用前缀，就是让临近的最好有最长的公共前缀。对于静态的离线场景就很显然，radix树上的一种dfs序即最优。然后对于在线场景，其实可以做到类似，不过应该算局部优。对于延时要求比较高的场景，我看文章意思是可以通过限制reorder的范围做到。</p>
+<p>然后需要一种调度来充分利用前缀，就是让临近的最好有最长的公共前缀。对于静态的离线场景就很显然，radix树上的一种dfs序即最优。然后对于在线场景，其实可以做到类似，不过应该算局部优。还有一个点，这种充分复用cache的贪心可能会导致starvation。对于延时要求比较高的场景，我看文章意思是可以通过限制reorder的范围做到。</p>
 <p>考虑分布式场景，这些数据结构都在cpu，对TP来说没啥影响。DP的话每个worker维护自己的子树，router维护元信息树，也是个trie一样的树。来一个请求通过元信息树查询找到有最长前缀的worker分发到那里。然后worker处子树变更要先提交到提交队列，再操作，便于元信息同步。很显然，这边的策略是倾向数据局部性的，并行效率会有牺牲。这里可能可以有更好的trade-off。</p>
 <h2 id="Efficient-Constrained-Decoding-with-Compressed-Finite-State-Machine"><a href="#Efficient-Constrained-Decoding-with-Compressed-Finite-State-Machine" class="headerlink" title="Efficient Constrained Decoding with Compressed Finite State Machine"></a>Efficient Constrained Decoding with Compressed Finite State Machine</h2><p>在output有要求格式情况下，可以一次decode多个token，其实就是状态机有唯一转移的时候压成一个状态，和trie压成radix tree一个道理。其实这块感觉应该还有不少工程层面的工作量。</p>
 <h2 id="Efficient-Endpoint-Calling-with-API-Speculative-Execution"><a href="#Efficient-Endpoint-Calling-with-API-Speculative-Execution" class="headerlink" title="Efficient Endpoint Calling with API Speculative Execution"></a>Efficient Endpoint Calling with API Speculative Execution</h2><p>这个其实很应用框架层面了，用户用api调用的方式时可能有时候LLM会多吐出来几个和后面询问相关的信息，所以就让它多吐几个token然后可能可以用于后面询问匹配，节省延时和api调用次数。当然，原文说with careful prompt engineering。</p>
@@ -197,7 +197,13 @@
 <p>提一下RadixAttention的overhead吧，文章用没有前缀可以复用的样例去测大概有0.3%</p>
 <h2 id="Related-Work"><a href="#Related-Work" class="headerlink" title="Related Work"></a>Related Work</h2><p>先是对比偏推理引擎层面的KV cache相关工作，vLLM和ChunkedAttention对KV cache的reuse不充分，主要在算子层做优化的有HydraGen, FlashInfer, and ChunkedAttention，API Serve和LLM-SQL是关系型数据库和KV cache结合。</p>
 <p>后是对比应用框架的工作，优势是可以兼容，然后又有与推理引擎层的优化结合。</p>
-<h2 id="Future-Directions-and-Conclusion"><a href="#Future-Directions-and-Conclusion" class="headerlink" title="Future Directions and Conclusion"></a>Future Directions and Conclusion</h2><h2 id="个人感想"><a href="#个人感想" class="headerlink" title="个人感想"></a>个人感想</h2><p>其实优化个人感觉都还比较trivial，算是玩数据结构玩得比较明白吧。其实两个比较大的优化都来自于状压思想。</p>
+<h2 id="Future-Directions-and-Conclusion"><a href="#Future-Directions-and-Conclusion" class="headerlink" title="Future Directions and Conclusion"></a>Future Directions and Conclusion</h2><ol>
+<li>静态图编译：schedule，memory planning</li>
+<li>跨多层存储结构的RadixAttention</li>
+<li>提供模糊语义，提供高层次原语</li>
+<li>解决调度可能的starvation</li>
+</ol>
+<h2 id="个人感想"><a href="#个人感想" class="headerlink" title="个人感想"></a>个人感想</h2><p>其实优化个人感觉都还比较trivial，算是玩数据结构玩得比较明白吧。其实两个比较大的优化都来自于状压思想。</p>
 <p>其实至少对我而言我是觉得整篇的重点就是RadixAttention，感觉改名叫这个更好，SGlang中lang的部分其实没做什么很新的东西。</p>
 <p>还有就是主要优化在于数据局部性，感觉对于倾向低延时的大规模分布式推理场景应该是会差一点。感觉可能可以有一种更好的动态树来维护分布式场景的调度。</p>
 <p>这篇文章有种“我全都要”的感觉，一会感觉很易用的应用框架，一会感觉想弄个性能很好的推理引擎，明明都算得上是两种系统，导致对比别的系统的时候有点东一榔头西一棒锤，主打想要一个你们有的我全要，我现在没有的也得有个todo在那，上可兼容别的DSL转过来，下可图编译优化，甚至LLM对prompt优化这种东西都搞出来了，只能说野心很大，主要还是想像vLLM一样直接能把社区做起来吧。</p>
